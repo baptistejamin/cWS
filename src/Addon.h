@@ -27,21 +27,11 @@
   #include "headers/14/base_object-inl.h"
 #endif
 
+#if NODE_MAJOR_VERSION==16
+  #include "headers/16/base_object-inl.h"
+#endif
+
 using BaseObject = node::BaseObject;
-using TLSWrap = node::TLSWrap;
-class TLSWrapSSLGetter : public node::TLSWrap {
-public:
-    void setSSL(const v8::FunctionCallbackInfo<v8::Value> &info){
-        v8::Isolate* isolate = info.GetIsolate();
-        if (!ssl_){
-            info.GetReturnValue().Set(v8::Null(isolate));
-            return;
-        }
-        SSL* ptr = ssl_.get();
-        v8::Local<v8::External> ext = v8::External::New(isolate, ptr);
-        info.GetReturnValue().Set(ext);
-    }
-};
 
 // Fix windows not resolved symbol issue
 #if defined(_MSC_VER)
@@ -592,31 +582,7 @@ void startAutoPing(const FunctionCallbackInfo<Value> &args) {
 
 
 void getSSLContext(const FunctionCallbackInfo<Value> &args) {
-    Isolate* isolate = args.GetIsolate();
-    if(args.Length() < 1 || !args[0]->IsObject()){
-
-      #if NODE_MAJOR_VERSION >= 13
-        isolate->ThrowException(Exception::TypeError(
-          String::NewFromUtf8(isolate, "Error: One object expected").ToLocalChecked()));
-      #else
-        isolate->ThrowException(Exception::TypeError(
-          String::NewFromUtf8(isolate, "Error: One object expected")));
-      #endif
-
-      return;
-    }
-
-    Local<Context> context = isolate->GetCurrentContext();
-    Local<Object> obj = args[0]->ToObject(context).ToLocalChecked();
-
-    #if NODE_MAJOR_VERSION < 10
-      Local<Value> ext = obj->Get(String::NewFromUtf8(isolate, "_external"));
-      args.GetReturnValue().Set(ext);
-    #else
-      TLSWrapSSLGetter* tw;
-      ASSIGN_OR_RETURN_UNWRAP(&tw, obj);
-      tw->setSSL(args);
-    #endif
+    
 }
 
 void setNoop(const FunctionCallbackInfo<Value> &args) {
